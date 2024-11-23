@@ -1,0 +1,142 @@
+version: '3'
+
+services:
+  nginx:
+    build: ./requirements/nginx
+    image: nginx:1.0
+    container_name: nginx
+    ports:
+      - 443:443
+    depends_on:
+      - wordpress
+    networks:
+      - inception
+    volumes:
+      - wordpress_website:/var/www/html
+    restart: unless-stopped
+    
+  wordpress:
+    build: ./requirements/wordpress
+    image: wordpress:1.0
+    container_name: wordpress
+    depends_on:
+      - mariadb
+    env_file: .env
+    environment:
+      - WORDPRESS_DB_HOST=mariadb:3306
+      - WORDPRESS_DB_USER=$MYSQL_USER
+      - WORDPRESS_DB_PASSWORD=$MYSQL_PASSWORD
+      - WORDPRESS_DB_NAME=$MYSQL_DATABASE
+    networks:
+      - inception
+    volumes:
+      - wordpress_website:/var/www/html
+    restart: unless-stopped
+
+  mariadb:
+    build: ./requirements/mariadb
+    image: mariadb:1.0
+    container_name: mariadb
+    env_file: .env
+    networks:
+      - inception
+    volumes:
+      - wordpress_database:/var/lib/mysql
+    restart: unless-stopped
+
+  redis:
+    build: ./requirements/bonus/redis
+    image: redis:1.0
+    container_name: redis
+    depends_on:
+      - wordpress
+    env_file:
+      - .env
+    networks:
+      - inception
+    restart: unless-stopped
+
+  ftp:
+    build: ./requirements/bonus/ftp
+    image: ftp:1.0
+    container_name: ftp
+    depends_on:
+      - wordpress
+    env_file:
+      - .env
+    ports:
+      - 20:20
+      - 21:21
+      - 40000-40002:40000-40002  # ports for PASV connection
+    networks:
+      - inception
+    volumes:
+      - wordpress_website:/var/www/html
+    restart: unless-stopped
+  
+  static_site:
+    build: ./requirements/bonus/static_site
+    image: static-site:1.0
+    container_name: static-site
+    ports:
+      - 4587:4587
+    networks:
+      - inception
+    restart: unless-stopped
+  
+  adminer:
+    build: ./requirements/bonus/adminer
+    image: adminer:1.0
+    container_name: adminer
+    ports:
+      - 8080:8080
+    networks:
+      - inception
+    restart: unless-stopped
+
+  node18:
+    build: ./requirements/bonus/node18
+    image: node18:1.0
+    container_name: node18
+    ports:
+      - 3000:3000
+    networks:
+      - inception
+    restart: unless-stopped
+
+  portainer:
+    image: portainer/portainer
+    container_name: portainer
+    restart: always
+    networks:
+      - inception
+    ports:
+      - 9000:9000
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+
+networks:
+  inception:
+
+volumes:
+  wordpress_website:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: '/home/wxuerui/data/wordpress_website'
+
+  wordpress_database:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: '/home/wxuerui/data/wordpress_database'
+    
+  portainer_data:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: '/home/wxuerui/data/portainer_data'
