@@ -1,0 +1,53 @@
+---
+
+- name: Ensure .env file exists
+  ansible.builtin.copy:
+    dest: /home/{{ ansible_user }}/{{ github_repo_name }}/Inception/.env
+    content: |
+      MYSQL_USER={{ mysql_user }}
+      MYSQL_PASSWORD={{ mysql_password }}
+      MYSQL_DATABASE={{ mysql_database }}
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0600'
+
+# - name: Set ansible_user dynamically for loops
+#   ansible.builtin.set_fact:
+#     ansible_user: "{{ ansible_user_id }}"
+
+- name: Debug ansible_user
+  ansible.builtin.debug:
+    var: ansible_user
+
+- name: Ensure volume directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0755'
+  loop:
+    - /home/{{ ansible_user }}/data/wordpress_website
+    - /home/{{ ansible_user }}/data/wordpress_database
+    - /home/{{ ansible_user }}/data/portainer_data
+
+# if docker compose community not working may need to install docker compose
+- name: Deploy Inception container using Docker Compose
+  community.docker.docker_compose_v2:
+    project_src: /home/{{ ansible_user }}/{{ github_repo_name }}/Inception
+    state: present
+  async: 60
+  poll: 0
+  register: compose_deploy
+
+- name: Wait for Docker Compose deployment to complete
+  ansible.builtin.async_status:
+    jid: "{{ compose_deploy.ansible_job_id }}"
+  register: job_result
+  until: job_result.finished
+  retries: 30
+  delay: 5
+
+- name: Show docker-compose deployment result
+  ansible.builtin.debug:
+    var: job_result

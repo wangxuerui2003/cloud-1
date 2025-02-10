@@ -1,0 +1,26 @@
+---
+- hosts: all
+  become: true
+  vars:
+    ansible_user: shawn
+  vars_files:
+    - vars/vault.yml
+  roles:
+    - role: setup_common_package
+    - role: setup_docker
+    # - role: project_setup
+    - role: clone_repo
+    - role: run_docker_compose
+    - role: down_docker_compose
+      tags: down
+      when: "'down' in ansible_run_tags"
+    # - role: networks_and_volumes
+    # - role: mariadb
+    # - role: wordpress
+    # - role: redis
+    # - role: nginx
+    # - role: ftp
+    # - role: static_site
+    # - role: adminer
+    # - role: node18
+    # - role: portainer

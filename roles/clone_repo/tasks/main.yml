@@ -1,0 +1,119 @@
+---
+  - name: Ensure SSH directory exists
+    ansible.builtin.file:
+      path: /home/{{ ansible_user }}/.ssh
+      state: directory
+      mode: '0700'
+      owner: "{{ ansible_user }}"
+      group: "{{ ansible_user }}"
+  
+  - name: Generate new SSH key pair
+    ansible.builtin.command:
+      cmd: ssh-keygen -t rsa -b 4096 -f /home/{{ ansible_user }}/.ssh/id_rsa -q -N ""
+    args:
+      creates: /home/{{ ansible_user }}/.ssh/id_rsa
+  
+  - name: Read the generated public key
+    ansible.builtin.slurp:
+      src: /home/{{ ansible_user }}/.ssh/id_rsa.pub
+    register: ssh_key
+  
+  # - name: Debug decoded public key
+  #     ansible.builtin.debug:
+  #       msg: "{{ ssh_key.content | b64decode | trim }}"
+  
+  - name: Debug JSON payload
+    ansible.builtin.debug:
+      msg: "{{ {
+        'title': 'Ansible Generated Key',
+        'key': ssh_key.content | b64decode | trim,
+        'read_only': true
+      } | to_json }}"
+  
+  - name: Check if public key is already added to GitHub
+    ansible.builtin.uri:
+      url: https://api.github.com/repos/{{ github_repo_owner }}/{{ github_repo_name }}/keys
+      method: GET
+      headers:
+        Authorization: token {{ github_token }}
+      body_format: json
+      status_code: 200
+    register: github_keys
+  
+  - name: Add public key to GitHub
+    ansible.builtin.uri:
+      url: https://api.github.com/repos/{{ github_repo_owner }}/{{ github_repo_name }}/keys
+      method: POST
+      headers:
+        Authorization: token {{ github_token }}
+        Content-Type: application/vnd.github+json
+      body: "{{ {
+        'title': 'Ansible Generated Key',
+        'key': ssh_key.content | b64decode | trim,
+        'read_only': true
+      } | to_json }}"
+      body_format: json
+      status_code: 200, 201, 422
+    register: github_response
+    ignore_errors: yes
+    when: >
+      github_keys.json is not defined or
+      ssh_key.content | b64decode | trim not in github_keys.json | map(attribute='key') | list
+  
+  - name: Check if key was already added
+    ansible.builtin.debug:
+      msg: "SSH key is already in use. Skipping key addition."
+    when: github_response.status == 422 and 'key is already in use' in github_response.json.errors[0].message
+  
+  # - name: Add GitHub to known_hosts (if not already added)
+  #   ansible.builtin.command:
+  #     cmd: ssh-keyscan github.com >> /home/{{ ansible_user }}/.ssh/known_hosts
+  #   args:
+  #     creates: /home/{{ ansible_user }}/.ssh/known_hosts
+  
+  # - name: Ensure GitHub is in known_hosts
+  #   ansible.builtin.lineinfile:
+  #     path: /home/{{ ansible_user }}/.ssh/known_hosts
+  #     line: "{{ lookup('pipe', 'ssh-keyscan github.com 2>/dev/null') }}"
+  #     create: yes
+  #     state: present
+  #     mode: '0644'
+  #     owner: "{{ ansible_user }}"
+  #     group: "{{ ansible_user }}"
+  
+  - name: Ensure GitHub is in known_hosts
+    ansible.builtin.lineinfile:
+      path: /home/{{ ansible_user }}/.ssh/known_hosts
+      line: "{{ github_ssh_key }}"
+      create: yes
+      state: present
+      mode: '0644'
+      owner: "{{ ansible_user }}"
+      group: "{{ ansible_user }}"
+  
+  - name: Check if project directory exists
+    ansible.builtin.stat:
+      path: /home/{{ ansible_user }}/{{ github_repo_name }}
+    register: project_dir
+  
+  - name: Create project directory on managed node if not exists
+    ansible.builtin.file:
+      path: /home/{{ ansible_user }}/{{ github_repo_name }}
+      state: directory
+      owner: "{{ ansible_user }}"
+      group: "{{ ansible_user }}"
+      mode: '0755'
+    when: not project_dir.stat.exists
+  
+  - name: Clone or update the GitHub repository
+    ansible.builtin.git:
+      repo: 'git@github.com:{{ github_repo_owner }}/{{ github_repo_name }}.git'
+      dest: /home/{{ ansible_user }}/{{ github_repo_name }}
+      version: main
+      update: true
+      key_file: /home/{{ ansible_user }}/.ssh/id_rsa
+  
+  - name: Report on cloning success
+    ansible.builtin.debug:
+      msg: "Repository cloned or updated successfully."
+  

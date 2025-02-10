@@ -1,0 +1,4 @@
+---
+# Disable /usr/bin/python3.8 warning
+# Reference: https://docs.ansible.com/ansible-core/2.18/reference_appendices/interpreter_discovery.html
+ansible_python_interpreter: auto_silent

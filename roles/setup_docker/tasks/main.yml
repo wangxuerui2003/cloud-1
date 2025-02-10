@@ -1,0 +1,54 @@
+---
+- name: Add Docker GPG apt Key
+  ansible.builtin.apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add Docker Repository
+  ansible.builtin.apt_repository:
+    repo: deb https://download.docker.com/linux/ubuntu focal stable
+    state: present
+
+- name: Check if Docker is installed
+  ansible.builtin.stat:
+    path: /usr/bin/docker
+  register: docker_installed
+
+- name: Update apt and install docker-ce if not installed
+  ansible.builtin.apt:
+    name: docker-ce
+    state: present
+    update_cache: true
+  when: not docker_installed.stat.exists
+
+- name: Install Docker Module for Python
+  ansible.builtin.pip:
+    name: docker
+
+- name: Ensure user is in docker group
+  ansible.builtin.user:
+    name: "{{ ansible_user }}"
+    groups: docker
+    append: true
+
+- name: Check if Docker Compose is installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/docker-compose
+  register: docker_compose_installed
+
+- name: Install Docker Compose if not installed
+  ansible.builtin.get_url:
+    url: https://github.com/docker/compose/releases/latest/download/docker-compose-Linux-x86_64
+    dest: /usr/local/bin/docker-compose
+    mode: '0755'
+  when: not docker_compose_installed.stat.exists
+
+- name: Verify Docker Compose installation
+  ansible.builtin.command:
+    cmd: docker-compose --version
+  register: docker_compose_version
+  changed_when: false
+
+- name: Display Docker Compose version
+  ansible.builtin.debug:
+    msg: "{{ docker_compose_version.stdout }}"

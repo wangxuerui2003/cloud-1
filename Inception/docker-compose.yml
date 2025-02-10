@@ -1,4 +1,4 @@
-version: '3'
+# version: '3'
 
 services:
   nginx:
@@ -125,18 +125,23 @@ volumes:
     driver_opts:
       type: 'none'
       o: 'bind'
-      device: '/home/wxuerui/data/wordpress_website'
+      device: '/home/shawn/data/wordpress_website'
+      # device: '${HOME}/data/wordpress_website'
+
 
   wordpress_database:
     driver: local
     driver_opts:
       type: 'none'
       o: 'bind'
-      device: '/home/wxuerui/data/wordpress_database'
+      device: '/home/shawn/data/wordpress_database'
+      # device: '${HOME}/data/wordpress_database'
+
     
   portainer_data:
     driver: local
     driver_opts:
       type: 'none'
       o: 'bind'
-      device: '/home/wxuerui/data/portainer_data'
+      device: '/home/shawn/data/portainer_data'
+      # device: '${HOME}/data/portainer_data'

@@ -29,3 +29,10 @@ PLAY RECAP *********************************************************************
 BECOME password: 
 Vault password: 
 ```
+
+# Testing with site.yml
+```
+@shawnteh1711 ➜ /workspaces/cloud-1 (main) $ ansible-playbook site.yml -i inventory/inventory.ini -u shawn --ask-become-pass --ask-vault-pass
+BECOME password: 
+Vault password: 
+```
