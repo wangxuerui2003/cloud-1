@@ -21,15 +21,15 @@
 
 - name: Ensure volume directories exist
   ansible.builtin.file:
-    path: "{{ item }}"
+    path: "/home/{{ ansible_user }}/data/{{ item }}"
     state: directory
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: '0755'
   loop:
-    - /home/{{ ansible_user }}/data/wordpress_website
-    - /home/{{ ansible_user }}/data/wordpress_database
-    - /home/{{ ansible_user }}/data/portainer_data
+    - wordpress_website
+    - wordpress_database
+    - portainer_data
 
 # if docker compose community not working may need to install docker compose
 - name: Deploy Inception container using Docker Compose

@@ -1,8 +1,6 @@
 ---
 - hosts: all
   become: true
-  vars:
-    ansible_user: shawn
   vars_files:
     - vars/vault.yml
   roles:
