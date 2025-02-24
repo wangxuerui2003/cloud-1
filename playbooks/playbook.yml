@@ -75,7 +75,7 @@
 
     - name: Copy docker-compose file to managed node
       copy:
-        src: ../inception/docker-compose.yml
+        src: ../Inception/docker-compose.yml
         dest: /home/{{ ansible_user }}/project/docker-compose.yml
       when: not docker_compose_file.stat.exists
 
