@@ -20,7 +20,7 @@
 
 - name: Copy docker-compose file to managed node
   ansible.builtin.copy:
-    src: ../inception/docker-compose.yml
+    src: ../Inception/docker-compose.yml
     dest: /home/{{ ansible_user }}/project/docker-compose.yml
     mode: '0644'
   when: not docker_compose_file.stat.exists
