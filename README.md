@@ -30,6 +30,8 @@ $ vagrant up
 # default user is wxuerui, replace the env with your own username
 export USER=<your-username>
 
+# Inside Inception there is a .env.example, create .env.db, .env.wp and .env.pma from it
+
 # Notice: for all local plays, user is "vagrant" and become password is "password"
 
 # setup + deploy to cloud
