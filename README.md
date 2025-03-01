@@ -56,3 +56,6 @@ $ make deploy_cloud
 # Deploy local
 $ make deploy_local
 ```
+
+## TODO
+- [ ] Nginx replace hardcoded server_name and ssl cert
