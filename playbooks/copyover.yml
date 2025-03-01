@@ -1,0 +1,33 @@
+---
+- name: Setup
+  hosts: all
+  vars:
+    project_path: "/home/{{ ansible_user }}/project"
+  roles:
+    - setup_common_package
+    - setup_docker
+    - inception_setup
+  tags: setup
+
+- name: Deploy
+  hosts: all
+  vars:
+    project_path: "/home/{{ ansible_user }}/project"
+    # docker compose v2 states
+    # present(up), stopped(stop), absent(down), restarted(restart)
+    state: present
+  roles:
+    - role: mariadb
+      tags: 
+        - mariadb
+    - role: wordpress
+      tags: 
+        - wordpress
+    - role: pma
+      tags: 
+        - pma
+    - role: nginx
+      tags: 
+        - nginx
+  tags: deploy
+

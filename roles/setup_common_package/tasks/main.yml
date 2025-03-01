@@ -4,6 +4,7 @@
     name: aptitude
     state: present
     update_cache: true
+  become: true
 
 - name: Install common system packages
   ansible.builtin.apt:
@@ -17,3 +18,4 @@
       - python3-setuptools
     state: present
     update_cache: true
+  become: true

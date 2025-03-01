@@ -3,8 +3,6 @@ services:
     build: ./requirements/nginx
     ports:
       - 443:443
-    depends_on:
-      - wordpress
     networks:
       - frontend
     volumes:
@@ -13,8 +11,6 @@ services:
 
   wordpress:
     build: ./requirements/wordpress
-    depends_on:
-      - mariadb
     env_file:
       - .env.wp
     networks:
@@ -38,8 +34,6 @@ services:
     build: ./requirements/phpmyadmin/
     env_file:
       - .env.pma
-    depends_on:
-      - mariadb
     networks:
       - frontend
       - backend
@@ -57,12 +51,12 @@ volumes:
     driver_opts:
       type: 'none'
       o: 'bind'
-      device: '/home/wxuerui/data/wordpress_website'
+      device: '/home/{{ ansible_user }}/data/wordpress_website'
 
   wordpress_database:
     driver: local
     driver_opts:
       type: 'none'
       o: 'bind'
-      device: '/home/wxuerui/data/wordpress_database'
+      device: '/home/{{ ansible_user }}/data/wordpress_database'
 

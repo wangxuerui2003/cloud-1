@@ -1,7 +1,7 @@
-- name: "{{ state }} Nginx service"
+- name: "{{ state }} Wordpress service"
   community.docker.docker_compose_v2:
     project_src: "{{ project_path }}"
     services:
-      - nginx
+      - wordpress
     state: "{{ state }}"
   become: true
