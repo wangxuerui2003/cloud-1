@@ -36,3 +36,6 @@ Vault password:
 BECOME password: 
 Vault password: 
 ```
+
+# Testing with vault.sh
+ansible-playbook site.yml -i inventory/inventory.ini -u shawn --ask-become-pass --vault-password-file vault.sh

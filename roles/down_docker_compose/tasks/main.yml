@@ -1,9 +1,6 @@
 ---
 - name: Bring down Docker Compose and remove volumes
-  ansible.builtin.command:
-    cmd: docker-compose down -v
-    chdir: /home/{{ ansible_user }}/{{ github_repo_name }}/Inception
-
-- name: Removed unused Docker volumes
-  ansible.builtin.command:
-    cmd: docker volume prune -f
+  community.docker.docker_compose_v2:
+    project_src: /home/{{ ansible_user }}/{{ github_repo_name }}/Inception
+    state: absent
+    remove_volumes: yes
