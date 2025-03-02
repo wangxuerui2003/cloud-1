@@ -11,7 +11,7 @@ if [ ! -e "./wp-config.php" ]; then
 		--dbhost=$WORDPRESS_DB_HOST \
 		--allow-root
 
-	wp core install --url=wxuerui.42.fr \
+	wp core install --url=$DOMAIN_NAME \
 		--title="Inception" \
 		--admin_user=$WP_ADMIN_USER \
 		--admin_password=$WP_ADMIN_PASSWORD \

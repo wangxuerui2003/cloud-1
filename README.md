@@ -60,4 +60,5 @@ $ make deploy_local
 ```
 
 ## TODO
-- [ ] Nginx replace hardcoded server_name and ssl cert
+- [x] Nginx replace hardcoded server_name and ssl cert
+- [ ] More readable playbooks/roles with blocks of related tasks

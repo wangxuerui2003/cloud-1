@@ -1,14 +1,21 @@
 ---
-- name: Ensure volume directories exist
-  ansible.builtin.file:
+- name: Check if volume directories exist
+  ansible.builtin.stat:
     path: "/home/{{ ansible_user }}/data/{{ item }}"
+  loop:
+    - wordpress_website
+    - wordpress_database
+  register: dir_check
+
+- name: Create volume directories if not exist
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/data/{{ item.item }}"
     state: directory
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: '0755'
-  loop:
-    - wordpress_website
-    - wordpress_database
+  loop: "{{ dir_check.results }}"
+  when: not item.stat.exists
 
 - name: Check if requirements exists
   stat:
@@ -53,6 +60,7 @@
     - .env.db
     - .env.wp
     - .env.pma
+    - .env.config
   register: env_stat
 
 - name: Copy .env file if not exists or checksums differ

@@ -5,6 +5,8 @@ services:
       - 443:443
     networks:
       - frontend
+    env_file:
+      - .env.config
     volumes:
       - wordpress_website:/var/www/html
     restart: unless-stopped
@@ -13,6 +15,7 @@ services:
     build: ./requirements/wordpress
     env_file:
       - .env.wp
+      - .env.config
     networks:
       - frontend
       - backend
