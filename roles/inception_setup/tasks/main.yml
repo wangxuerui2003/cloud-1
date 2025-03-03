@@ -1,97 +1,106 @@
 ---
-- name: Check if volume directories exist
-  ansible.builtin.stat:
-    path: "/home/{{ ansible_user }}/data/{{ item }}"
-  loop:
-    - wordpress_website
-    - wordpress_database
-  register: dir_check
+- name: Ensure volume directories exist
+  block:
+    - name: Check if volume directories exist
+      ansible.builtin.stat:
+        path: "/home/{{ ansible_user }}/data/{{ item }}"
+      loop:
+        - wordpress_website
+        - wordpress_database
+      register: dir_check
 
-- name: Create volume directories if not exist
-  ansible.builtin.file:
-    path: "/home/{{ ansible_user }}/data/{{ item.item }}"
-    state: directory
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-    mode: '0755'
-  loop: "{{ dir_check.results }}"
-  when: not item.stat.exists
+    - name: Create volume directories if not exist
+      ansible.builtin.file:
+        path: "/home/{{ ansible_user }}/data/{{ item.item }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'
+      loop: "{{ dir_check.results }}"
+      when: not item.stat.exists
 
-- name: Check if requirements exists
-  stat:
-    path: "{{ project_path }}/requirements"
-  register: requirements_stat
+- name: Copy requirements.txt
+  block:
+    - name: Check if requirements exists
+      stat:
+        path: "{{ project_path }}/requirements"
+      register: requirements_stat
 
-- name: Copy over requirements if not exists
-  ansible.builtin.copy:
-    src: "../../../Inception/requirements"
-    dest: "{{ project_path }}"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-  when: not requirements_stat.stat.exists
+    - name: Copy over requirements if not exists
+      ansible.builtin.copy:
+        src: "../../../Inception/requirements"
+        dest: "{{ project_path }}"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+      when: not requirements_stat.stat.exists
 
-- name: Check if docker-compose.yml exists
-  stat:
-    path: "{{ project_path }}/docker-compose.yml"
-  register: docker_compose_stat
+- name: Deploy docker-compose.yml template
+  block:
+    - name: Check if docker-compose.yml exists
+      stat:
+        path: "{{ project_path }}/docker-compose.yml"
+      register: docker_compose_stat
 
-- name: Get template file hash to compare
-  set_fact:
-    template_content: "{{ lookup('template', '../../../Inception/docker-compose.yml.j2') }}"
-    
-- name: Get template checksum
-  set_fact:
-    template_checksum: "{{ template_content | hash('sha256') }}"
+    - name: Get template file hash to compare
+      set_fact:
+        template_content: "{{ lookup('template', '../../../Inception/docker-compose.yml.j2') }}"
+        
+    - name: Get template checksum
+      set_fact:
+        template_checksum: "{{ template_content | hash('sha256') }}"
 
-- name: Deploy docker-compose.yml template if not exists or checksums differ
-  ansible.builtin.template:
-    src: "../../../Inception/docker-compose.yml.j2"
-    dest: "{{ project_path }}/docker-compose.yml"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-  when: not docker_compose_stat.stat.exists or 
-        docker_compose_stat.stat.checksum != template_checksum
+    - name: Deploy docker-compose.yml template if not exists or checksums differ
+      ansible.builtin.template:
+        src: "../../../Inception/docker-compose.yml.j2"
+        dest: "{{ project_path }}/docker-compose.yml"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+      when: not docker_compose_stat.stat.exists or 
+            docker_compose_stat.stat.checksum != template_checksum
 
+- name: Deploy .env.config
+  block:
+    - name: Check if .env.config exists
+      stat:
+        path: "{{ project_path }}/.env.config"
+      register: env_config_stat
 
-- name: Check if .env.config exists
-  stat:
-    path: "{{ project_path }}/.env.config"
-  register: env_config_stat
+    - name: Get template file hash to compare
+      set_fact:
+        template_content: "{{ lookup('template', '../../../Inception/.env.config.j2') }}"
+        
+    - name: Get template checksum
+      set_fact:
+        template_checksum: "{{ template_content | hash('sha256') }}"
 
-- name: Get template file hash to compare
-  set_fact:
-    template_content: "{{ lookup('template', '../../../Inception/.env.config.j2') }}"
-    
-- name: Get template checksum
-  set_fact:
-    template_checksum: "{{ template_content | hash('sha256') }}"
+    - name: Deploy .env.config template if not exists or checksums differ
+      ansible.builtin.template:
+        src: "../../../Inception/.env.config.j2"
+        dest: "{{ project_path }}/.env.config"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+      when: not env_config_stat.stat.exists or 
+            env_config_stat.stat.checksum != template_checksum
 
-- name: Deploy .env.config template if not exists or checksums differ
-  ansible.builtin.template:
-    src: "../../../Inception/.env.config.j2"
-    dest: "{{ project_path }}/.env.config"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-  when: not env_config_stat.stat.exists or 
-        env_config_stat.stat.checksum != template_checksum
+- name: Copy private .env files
+  block:
+    - name: Stat private .env files
+      ansible.builtin.stat:
+        path: "{{ project_path }}/{{ item }}"
+        checksum_algorithm: sha256
+      loop:
+        - .env.db
+        - .env.wp
+        - .env.pma
+      register: env_stat
 
-- name: Stat private .env files
-  ansible.builtin.stat:
-    path: "{{ project_path }}/{{ item }}"
-    checksum_algorithm: sha256
-  loop:
-    - .env.db
-    - .env.wp
-    - .env.pma
-  register: env_stat
-
-- name: Deploy .env files if not exists or checksums differ
-  ansible.builtin.copy:
-    src: "../../../Inception/{{ env_item.item }}"
-    dest: "{{ project_path }}"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-  loop: "{{ env_stat.results }}"
-  loop_control:
-    loop_var: env_item  # Rename the loop variable to avoid conflicts
-  when: not env_item.stat.exists or env_item.stat.checksum != lookup('file', "../../../Inception/" + env_item.item) | hash('sha256')
+    - name: Deploy .env files if not exists or checksums differ
+      ansible.builtin.copy:
+        src: "../../../Inception/{{ env_item.item }}"
+        dest: "{{ project_path }}"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+      loop: "{{ env_stat.results }}"
+      loop_control:
+        loop_var: env_item  # Rename the loop variable to avoid conflicts
+      when: not env_item.stat.exists or env_item.stat.checksum != lookup('file', "../../../Inception/" + env_item.item) | hash('sha256')
