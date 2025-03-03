@@ -52,7 +52,30 @@
   when: not docker_compose_stat.stat.exists or 
         docker_compose_stat.stat.checksum != template_checksum
 
-- name: Stat .env files
+
+- name: Check if .env.config exists
+  stat:
+    path: "{{ project_path }}/.env.config"
+  register: env_config_stat
+
+- name: Get template file hash to compare
+  set_fact:
+    template_content: "{{ lookup('template', '../../../Inception/.env.config.j2') }}"
+    
+- name: Get template checksum
+  set_fact:
+    template_checksum: "{{ template_content | hash('sha256') }}"
+
+- name: Deploy .env.config template if not exists or checksums differ
+  ansible.builtin.template:
+    src: "../../../Inception/.env.config.j2"
+    dest: "{{ project_path }}/.env.config"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  when: not env_config_stat.stat.exists or 
+        env_config_stat.stat.checksum != template_checksum
+
+- name: Stat private .env files
   ansible.builtin.stat:
     path: "{{ project_path }}/{{ item }}"
     checksum_algorithm: sha256
@@ -60,16 +83,15 @@
     - .env.db
     - .env.wp
     - .env.pma
-    - .env.config
   register: env_stat
 
-- name: Copy .env file if not exists or checksums differ
+- name: Deploy .env files if not exists or checksums differ
   ansible.builtin.copy:
     src: "../../../Inception/{{ env_item.item }}"
     dest: "{{ project_path }}"
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
-  loop: "{{ env_stat.results }}"  # ✅ Loop over the registered results
+  loop: "{{ env_stat.results }}"
   loop_control:
-    loop_var: env_item  # ✅ Rename the loop variable to avoid conflicts
+    loop_var: env_item  # Rename the loop variable to avoid conflicts
   when: not env_item.stat.exists or env_item.stat.checksum != lookup('file', "../../../Inception/" + env_item.item) | hash('sha256')
