@@ -34,6 +34,30 @@
         group: "{{ ansible_user }}"
       when: not requirements_stat.stat.exists
 
+- name: Deploy nginx Dockerfile template
+  block:
+    - name: Check if nginx Dockerfile exists
+      stat:
+        path: "{{ project_path }}/requirements/nginx/Dockerfile"
+      register: ngx_dockerfile_stat
+
+    - name: Get template file hash to compare
+      set_fact:
+        template_content: "{{ lookup('template', '../../../Inception/templates/Dockerfile.nginx.j2') }}"
+        
+    - name: Get template checksum
+      set_fact:
+        template_checksum: "{{ template_content | hash('sha256') }}"
+
+    - name: Deploy nginx Dockerfile template if not exists or checksums differ
+      ansible.builtin.template:
+        src: "../../../Inception/templates/Dockerfile.nginx.j2"
+        dest: "{{ project_path }}/requirements/nginx/Dockerfile"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+      when: not ngx_dockerfile_stat.stat.exists or 
+            ngx_dockerfile_stat.stat.checksum != template_checksum
+
 - name: Deploy docker-compose.yml template
   block:
     - name: Check if docker-compose.yml exists
@@ -67,7 +91,7 @@
 
     - name: Get template file hash to compare
       set_fact:
-        template_content: "{{ lookup('template', '../../../Inception/.env.config.j2') }}"
+        template_content: "{{ lookup('template', '../../../Inception/templates/.env.config.j2') }}"
         
     - name: Get template checksum
       set_fact:
@@ -75,7 +99,7 @@
 
     - name: Deploy .env.config template if not exists or checksums differ
       ansible.builtin.template:
-        src: "../../../Inception/.env.config.j2"
+        src: "../../../Inception/templates/.env.config.j2"
         dest: "{{ project_path }}/.env.config"
         owner: "{{ ansible_user }}"
         group: "{{ ansible_user }}"
