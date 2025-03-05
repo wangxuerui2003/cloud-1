@@ -1,0 +1,4 @@
+.env.wp
+.env.db
+.env.pma
+.env.config
