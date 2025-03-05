@@ -1,33 +1,33 @@
 USER = wxuerui
 
 local:
-	ansible-playbook playbooks/copyover.yml \
+	ansible-playbook playbooks/playbook.yml \
 		-l vagrant \
 		-u vagrant \
 		--ask-become-pass
 
 cloud:
-	ansible-playbook playbooks/copyover.yml \
+	ansible-playbook playbooks/playbook.yml \
 		-l cloud_server \
 		-u ${USER} \
 		--ask-become-pass
 
 setup_local:
-	ansible-playbook playbooks/copyover.yml \
+	ansible-playbook playbooks/playbook.yml \
 		-l vagrant \
 		-u vagrant \
 		--tags "setup" \
 		--ask-become-pass
 
 setup_cloud:
-	ansible-playbook playbooks/copyover.yml \
+	ansible-playbook playbooks/playbook.yml \
 		-l cloud_server \
 		-u ${USER} \
 		--tags "setup" \
 		--ask-become-pass
 
 deploy_local:
-	ansible-playbook playbooks/copyover.yml \
+	ansible-playbook playbooks/playbook.yml \
 		-l vagrant \
 		-u vagrant \
 		--tags "deploy" \
@@ -35,7 +35,7 @@ deploy_local:
 		--ask-become-pass
 
 deploy_cloud:
-	ansible-playbook playbooks/copyover.yml \
+	ansible-playbook playbooks/playbook.yml \
 		-l cloud_server \
 		-u ${USER} \
 		--tags "deploy" \
@@ -43,7 +43,7 @@ deploy_cloud:
 		--ask-become-pass
 
 down_local:
-	ansible-playbook playbooks/copyover.yml \
+	ansible-playbook playbooks/playbook.yml \
 		-l vagrant \
 		-u vagrant \
 		--tags "deploy" \
@@ -51,7 +51,7 @@ down_local:
 		--ask-become-pass
 
 down_cloud:
-	ansible-playbook playbooks/copyover.yml \
+	ansible-playbook playbooks/playbook.yml \
 		-l cloud_server \
 		-u ${USER} \
 		--tags "deploy" \
@@ -62,7 +62,7 @@ down_cloud:
 SERVICE = nginx
 
 deploy_service_local:
-	ansible-playbook playbooks/copyover.yml \
+	ansible-playbook playbooks/playbook.yml \
 		-l vagrant \
 		-u vagrant \
 		--tags "${SERVICE}" \
@@ -70,7 +70,7 @@ deploy_service_local:
 		--ask-become-pass
 
 deploy_service_cloud:
-	ansible-playbook playbooks/copyover.yml \
+	ansible-playbook playbooks/playbook.yml \
 		-l cloud_server \
 		-u ${USER} \
 		--tags "${SERVICE}" \

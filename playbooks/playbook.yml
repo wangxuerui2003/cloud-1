@@ -1,98 +1,33 @@
 ---
-- hosts: all
-  become: true
-  vars_files:
-    - vars/vault.yml
+- name: Setup
+  hosts: all
   vars:
-    # to disable /usr/bin/python3.8 warning. Reference: 
-    # See https://docs.ansible.com/ansible-core/2.18/reference_appendices/interpreter_discovery.html 
-    ansible_python_interpreter: auto_silent
+    project_path: "/home/{{ ansible_user }}/project"
+  roles:
+    - setup_common_package
+    - setup_docker
+    - inception_setup
+  tags: setup
 
-  tasks:
-    - name: Install aptitude
-      apt:
-        name: aptitude
-        state: latest
-        update_cache: true
+- name: Deploy
+  hosts: all
+  vars:
+    project_path: "/home/{{ ansible_user }}/project"
+    # docker compose v2 states
+    # present(up), stopped(stop), absent(down), restarted(restart)
+    state: present
+  roles:
+    - role: mariadb
+      tags: 
+        - mariadb
+    - role: wordpress
+      tags: 
+        - wordpress
+    - role: pma
+      tags: 
+        - pma
+    - role: nginx
+      tags: 
+        - nginx
+  tags: deploy
 
-    - name: Install required system packages
-      apt:
-        pkg:
-          - apt-transport-https
-          - ca-certificates
-          - curl
-          - software-properties-common
-          - python3-pip
-          - virtualenv
-          - python3-setuptools
-        state: latest
-        update_cache: true
-
-    - name: Add Docker GPG apt Key
-      apt_key:
-        url: https://download.docker.com/linux/ubuntu/gpg
-        state: present
-
-    - name: Add Docker Repository
-      apt_repository:
-        repo: deb https://download.docker.com/linux/ubuntu focal stable
-        state: present
-
-    - name: Check if Docker is installed
-      stat:
-        path: /usr/bin/docker
-      register: docker_installed
-
-    - name: Update apt and install docker-ce if not installed
-      apt:
-        name: docker-ce
-        state: latest
-        update_cache: true
-      when: not docker_installed.stat.exists
-
-    - name: Install Docker Module for Python
-      pip:
-        name: docker
-
-    - name: Check if project directory exists
-      stat:
-        path: /home/{{ ansible_user }}/project
-      register: project_dir
-
-    - name: Create project directory on managed node if not exists
-      file:
-        path: /home/{{ ansible_user }}/project
-        state: directory
-        owner: "{{ ansible_user }}"
-        group: "{{ ansible_user }}"
-        mode: '0755'
-      when: not project_dir.stat.exists
-
-    - name: Check if docker-compose.yml exists
-      stat:
-        path: /home/{{ ansible_user }}/project/docker-compose.yml
-      register: docker_compose_file
-
-    - name: Copy docker-compose file to managed node
-      copy:
-        src: ../Inception/docker-compose.yml
-        dest: /home/{{ ansible_user }}/project/docker-compose.yml
-      when: not docker_compose_file.stat.exists
-
-    - name: Report on docker-compose.yml presence
-      debug:
-        msg: "File exists"
-      when: docker_compose_file.stat.exists
-
-    - name: Deploy Inception container using Docker Compose
-      community.docker.docker_compose_v2:
-        project_src: /home/{{ ansible_user }}/project
-        state: present
-
-    - name: List running Inception containers
-      command: docker ps
-      register: inception_containers
-
-    - name: Display running Inception containers
-      debug:
-        var: inception_containers.stdout

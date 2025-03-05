@@ -1,8 +1,0 @@
----
-- hosts: all
-  become: true
-  vars_files:
-    - vars/vault.yml
-  tasks:
-    - name: setup repo
-      include_tasks: 'cloneRepo.yml'  
